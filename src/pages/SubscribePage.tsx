@@ -1,4 +1,4 @@
-import { forwardRef, useMemo, useState } from 'react';
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -16,7 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import { api } from '../lib/api';
-import { ApiError, type UpsertSubscriptionAck } from '../lib/types';
+import { ApiError } from '../lib/types';
 import { buildSubscriptionSchema, type SubscriptionFormValues } from '../schemas/subscription';
 import { Button } from '../components/ui/Button';
 import { Alert } from '../components/ui/Alert';
@@ -25,7 +25,6 @@ import { Card, SectionHeading } from '../components/ui/Card';
 import { FieldError } from '../components/forms/FieldError';
 
 export function SubscribePage() {
-  const [ack, setAck] = useState<UpsertSubscriptionAck | null>(null);
   const [serverErrors, setServerErrors] = useState<string[]>([]);
 
   const lookupsQuery = useQuery({
@@ -87,15 +86,35 @@ export function SubscribePage() {
     const topicsComplete = (watched.interestIds?.length ?? 0) > 0;
     const consentComplete = watched.consentGiven === true;
     return [
-      { label: 'About you', complete: aboutComplete },
-      { label: 'Contact', complete: contactComplete },
-      { label: 'Topics', complete: topicsComplete },
-      { label: 'Consent', complete: consentComplete },
+      { label: 'About you', complete: aboutComplete, anchorId: 'step-about' },
+      { label: 'Contact', complete: contactComplete, anchorId: 'step-contact' },
+      { label: 'Topics', complete: topicsComplete, anchorId: 'step-topics' },
+      { label: 'Consent', complete: consentComplete, anchorId: 'step-consent' },
     ];
   }, [watched, phoneOrSmsSelected, postSelected]);
 
   const firstIncomplete = steps.findIndex((s) => !s.complete);
   const activeStepIndex = firstIncomplete === -1 ? steps.length - 1 : firstIncomplete;
+  const completedCount = steps.filter((s) => s.complete).length;
+
+  const submitButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [submitVisible, setSubmitVisible] = useState(true);
+  useEffect(() => {
+    const node = submitButtonRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setSubmitVisible(entry.isIntersecting),
+      { rootMargin: '0px 0px -40px 0px', threshold: 0 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  function scrollToAnchor(id: string) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   const mutation = useMutation({
     mutationFn: (values: SubscriptionFormValues) =>
@@ -112,12 +131,11 @@ export function SubscribePage() {
         consentGiven: values.consentGiven,
       }),
     onSuccess: (data) => {
-      setAck(data);
       setServerErrors([]);
       reset();
       window.scrollTo({ top: 0, behavior: 'smooth' });
       toast.success('Preferences saved', {
-        description: "You'll start receiving newsletters through the channels you picked.",
+        description: `Ref: ${data.correlationId.slice(0, 8)} — we'll be in touch through your chosen channels.`,
       });
     },
     onError: (err) => {
@@ -153,14 +171,7 @@ export function SubscribePage() {
 
   return (
     <div className="space-y-10 max-w-4xl mx-auto">
-      <ProgressStepper steps={steps} activeIndex={activeStepIndex} />
-
-      {ack && (
-        <Alert tone="success" title="You're all set">
-          Your preferences have been recorded. We'll be in touch through the channels you chose.
-          <div className="mt-1 text-xs opacity-80">Reference: {ack.correlationId}</div>
-        </Alert>
-      )}
+      <ProgressStepper steps={steps} activeIndex={activeStepIndex} onNavigate={scrollToAnchor} />
 
       {serverErrors.length > 0 && (
         <Alert tone="error" title="We couldn't save your preferences">
@@ -173,11 +184,12 @@ export function SubscribePage() {
       )}
 
       <form
+        id="subscribe-form"
         noValidate
         className="space-y-8 animate-fade-in"
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
       >
-        <Card className="p-7 sm:p-8">
+        <Card id="step-about" className="p-7 sm:p-8 scroll-mt-24">
           <SectionHeading
             icon={<UserIcon className="h-5 w-5" />}
             title="About you"
@@ -208,6 +220,7 @@ export function SubscribePage() {
               autoComplete="email"
               required
               leadingIcon={<EnvelopeIcon className="h-4 w-4 text-slate-400" />}
+              description="Already subscribed? Re-submitting with the same email updates your existing preferences."
               error={errors.email?.message}
               {...register('email')}
             />
@@ -267,12 +280,13 @@ export function SubscribePage() {
           <FieldError id="subscriberTypeId-error" message={errors.subscriberTypeId?.message} />
         </Card>
 
-        <Card className="p-7 sm:p-8">
+        <Card id="step-contact" className="p-7 sm:p-8 scroll-mt-24">
           <SectionHeading
             icon={<ChatBubbleLeftRightIcon className="h-5 w-5" />}
             title="How can we contact you?"
             description="Pick one or more methods. Phone, SMS, and Post each require extra details."
             required
+            meta={<SelectionCounter selected={selectedPrefIds.length} total={lookups.communicationPreferences.length} />}
           />
           <Controller
             name="communicationPreferenceIds"
@@ -355,12 +369,13 @@ export function SubscribePage() {
           )}
         </Card>
 
-        <Card className="p-7 sm:p-8">
+        <Card id="step-topics" className="p-7 sm:p-8 scroll-mt-24">
           <SectionHeading
             icon={<TagIcon className="h-5 w-5" />}
             title="What would you like to hear about?"
             description="Pick everything that interests you — you can change this any time."
             required
+            meta={<SelectionCounter selected={watched.interestIds?.length ?? 0} total={lookups.interests.length} />}
           />
           <Controller
             name="interestIds"
@@ -402,7 +417,7 @@ export function SubscribePage() {
           <FieldError id="interestIds-error" message={errors.interestIds?.message as string | undefined} />
         </Card>
 
-        <Card className="p-7 sm:p-8">
+        <Card id="step-consent" className="p-7 sm:p-8 scroll-mt-24">
           <SectionHeading
             icon={<ShieldCheckIcon className="h-5 w-5" />}
             title="Consent"
@@ -431,6 +446,7 @@ export function SubscribePage() {
             By submitting you can unsubscribe at any time via the link in the header.
           </p>
           <Button
+            ref={submitButtonRef}
             type="submit"
             size="lg"
             loading={isSubmitting || mutation.isPending}
@@ -440,6 +456,13 @@ export function SubscribePage() {
           </Button>
         </div>
       </form>
+
+      <StickySubmitBar
+        visible={!submitVisible}
+        completed={completedCount}
+        total={steps.length}
+        loading={isSubmitting || mutation.isPending}
+      />
     </div>
   );
 }
@@ -447,14 +470,16 @@ export function SubscribePage() {
 interface Step {
   label: string;
   complete: boolean;
+  anchorId: string;
 }
 
 interface ProgressStepperProps {
   steps: Step[];
   activeIndex: number;
+  onNavigate: (anchorId: string) => void;
 }
 
-function ProgressStepper({ steps, activeIndex }: ProgressStepperProps) {
+function ProgressStepper({ steps, activeIndex, onNavigate }: ProgressStepperProps) {
   return (
     <section className="animate-fade-in">
       <div className="mb-5">
@@ -475,9 +500,14 @@ function ProgressStepper({ steps, activeIndex }: ProgressStepperProps) {
           const isLast = i === steps.length - 1;
           return (
             <li key={step.label} className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-              <div className="flex items-center gap-2 min-w-0">
+              <button
+                type="button"
+                onClick={() => onNavigate(step.anchorId)}
+                aria-current={isActive ? 'step' : undefined}
+                aria-label={`Go to ${step.label}${isComplete ? ' (completed)' : ''}`}
+                className="flex items-center gap-2 min-w-0 rounded-lg px-1.5 py-1 -mx-1.5 -my-1 hover:bg-slate-100/70 dark:hover:bg-midnight-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition"
+              >
                 <span
-                  aria-current={isActive ? 'step' : undefined}
                   className={`flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition ${
                     isComplete
                       ? 'bg-brand-600 text-white shadow-sm'
@@ -497,7 +527,7 @@ function ProgressStepper({ steps, activeIndex }: ProgressStepperProps) {
                 >
                   {step.label}
                 </span>
-              </div>
+              </button>
               {!isLast && (
                 <div
                   className={`h-px flex-1 min-w-[12px] transition-colors ${
@@ -510,6 +540,69 @@ function ProgressStepper({ steps, activeIndex }: ProgressStepperProps) {
         })}
       </ol>
     </section>
+  );
+}
+
+interface SelectionCounterProps {
+  selected: number;
+  total: number;
+}
+
+function SelectionCounter({ selected, total }: SelectionCounterProps) {
+  const active = selected > 0;
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium tabular-nums transition ${
+        active
+          ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 ring-1 ring-brand-500/20'
+          : 'bg-slate-100 dark:bg-midnight-800 text-slate-500 dark:text-slate-400'
+      }`}
+      aria-live="polite"
+    >
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-brand-500' : 'bg-slate-400 dark:bg-slate-600'}`}
+        aria-hidden="true"
+      />
+      {selected} of {total} selected
+    </span>
+  );
+}
+
+interface StickySubmitBarProps {
+  visible: boolean;
+  completed: number;
+  total: number;
+  loading: boolean;
+}
+
+function StickySubmitBar({ visible, completed, total, loading }: StickySubmitBarProps) {
+  return (
+    <div
+      aria-hidden={!visible}
+      className={`fixed inset-x-0 bottom-0 z-40 transition-all duration-200 ${
+        visible
+          ? 'translate-y-0 opacity-100 pointer-events-auto'
+          : 'translate-y-full opacity-0 pointer-events-none'
+      }`}
+    >
+      <div className="border-t border-slate-200 dark:border-midnight-700 bg-white/90 dark:bg-midnight-950/90 backdrop-blur shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.25)]">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 px-5 sm:px-8 py-3">
+          <span className="text-xs sm:text-sm text-muted tabular-nums">
+            <span className="font-semibold text-slate-900 dark:text-slate-100">{completed}</span>{' '}
+            of {total} steps complete
+          </span>
+          <Button
+            type="submit"
+            form="subscribe-form"
+            size="md"
+            loading={loading}
+            leadingIcon={<CheckBadgeIcon className="h-4 w-4" />}
+          >
+            Save preferences
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 

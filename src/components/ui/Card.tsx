@@ -25,9 +25,10 @@ interface SectionHeadingProps {
   title: string;
   description?: string;
   required?: boolean;
+  meta?: ReactNode;
 }
 
-export function SectionHeading({ icon, title, description, required }: SectionHeadingProps) {
+export function SectionHeading({ icon, title, description, required, meta }: SectionHeadingProps) {
   return (
     <div className="flex items-start gap-3 mb-4">
       {icon && (
@@ -35,10 +36,13 @@ export function SectionHeading({ icon, title, description, required }: SectionHe
           {icon}
         </div>
       )}
-      <div>
-        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-          {title} {required && <span className="text-red-500">*</span>}
-        </h2>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+            {title} {required && <span className="text-red-500">*</span>}
+          </h2>
+          {meta}
+        </div>
         {description && <p className="text-sm text-muted mt-0.5">{description}</p>}
       </div>
     </div>

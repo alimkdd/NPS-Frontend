@@ -20,7 +20,7 @@ export function AdminLoginPage() {
     adminAuth.set(key);
     try {
       const probe = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5289'}/api/admin/subscriptions?pageSize=1`,
+        `${import.meta.env.VITE_API_BASE_URL ?? 'https://localhost:7287'}/api/admin/subscriptions?pageSize=1`,
         { headers: { 'X-Admin-Key': key } },
       );
       if (probe.status === 401) {
