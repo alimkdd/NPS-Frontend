@@ -3,29 +3,96 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+    --surface: 255 255 255;
+    --surface-elevated: 255 255 255;
+    --surface-muted: 248 250 252;
+    --border-muted: 226 232 240;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --surface: 15 23 42;
+    --surface-elevated: 30 41 59;
+    --surface-muted: 2 6 23;
+    --border-muted: 51 65 85;
+  }
+
   html {
-    @apply text-slate-900 antialiased;
+    @apply antialiased font-sans;
   }
 
   body {
-    @apply bg-slate-50;
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   }
 
   *:focus-visible {
-    @apply outline-none ring-2 ring-brand-500 ring-offset-2;
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-slate-50 dark:ring-offset-slate-950;
+  }
+
+  ::selection {
+    @apply bg-brand-500/20 text-slate-900 dark:text-slate-100;
   }
 }
 
 @layer components {
-  .input-base {
-    @apply block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm placeholder-slate-400
-           focus:border-brand-500 focus:ring-1 focus:ring-brand-500
-           disabled:bg-slate-100 disabled:cursor-not-allowed;
+  .surface {
+    @apply bg-white dark:bg-slate-900;
   }
 
-  .input-base[aria-invalid="true"] {
+  .surface-muted {
+    @apply bg-slate-50 dark:bg-slate-950;
+  }
+
+  .border-muted {
+    @apply border-slate-200 dark:border-slate-800;
+  }
+
+  .text-muted {
+    @apply text-slate-600 dark:text-slate-400;
+  }
+
+  .text-subtle {
+    @apply text-slate-500 dark:text-slate-400;
+  }
+
+  .input-base {
+    @apply block w-full rounded-lg border border-slate-300 dark:border-slate-700
+           bg-white dark:bg-slate-900
+           text-slate-900 dark:text-slate-100
+           px-3.5 py-2.5 text-sm shadow-sm
+           placeholder-slate-400 dark:placeholder-slate-500
+           transition-colors duration-150
+           focus:border-brand-500 focus:ring-1 focus:ring-brand-500
+           disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:cursor-not-allowed;
+  }
+
+  .input-base[aria-invalid='true'] {
     @apply border-red-400 focus:border-red-500 focus:ring-red-500;
+  }
+
+  .card {
+    @apply surface border border-muted rounded-2xl shadow-card;
+  }
+
+  .card-elevated {
+    @apply surface border border-muted rounded-2xl shadow-card-lg;
+  }
+
+  .checkbox-base {
+    @apply h-4 w-4 rounded border-slate-300 dark:border-slate-600
+           text-brand-600 focus:ring-brand-500 focus:ring-offset-0
+           bg-white dark:bg-slate-900;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-full
+           border border-slate-200 dark:border-slate-700
+           bg-slate-50 dark:bg-slate-800
+           px-2 py-0.5 text-xs font-medium
+           text-slate-700 dark:text-slate-300;
   }
 }

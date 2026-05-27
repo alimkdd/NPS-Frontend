@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { KeyIcon, LockClosedIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import { adminAuth } from '../lib/auth';
 import { Button } from '../components/ui/Button';
 import { Alert } from '../components/ui/Alert';
+import { Card } from '../components/ui/Card';
 
 export function AdminLoginPage() {
   const navigate = useNavigate();
@@ -15,7 +17,6 @@ export function AdminLoginPage() {
     setError(null);
     setSubmitting(true);
 
-    // Probe the admin endpoint with this key — if we get 401, the key is wrong.
     adminAuth.set(key);
     try {
       const probe = await fetch(
@@ -41,42 +42,62 @@ export function AdminLoginPage() {
   }
 
   return (
-    <div className="max-w-md space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Admin sign-in</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Enter the admin API key to access the subscriptions dashboard. Your key is kept in
-          this browser tab only (sessionStorage) and is sent as the <code>X-Admin-Key</code>{' '}
-          header on every admin request.
+    <div className="max-w-md mx-auto space-y-6">
+      <header className="text-center animate-fade-in">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-gradient text-white shadow-md ring-1 ring-white/20">
+          <LockClosedIcon className="h-6 w-6" />
+        </div>
+        <h1 className="mt-4 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+          Admin sign-in
+        </h1>
+        <p className="mt-2 text-sm text-muted max-w-sm mx-auto">
+          Enter the admin API key to access the subscriptions dashboard.
         </p>
       </header>
 
       {error && <Alert tone="error">{error}</Alert>}
 
-      <form
-        noValidate
-        className="space-y-4 bg-white rounded-lg border border-slate-200 p-6 shadow-sm"
-        onSubmit={handleSubmit}
-      >
-        <div>
-          <label htmlFor="adminKey" className="block text-sm font-medium text-slate-700">
-            Admin key <span className="text-red-600">*</span>
-          </label>
-          <input
-            id="adminKey"
-            type="password"
-            autoComplete="off"
-            className="input-base mt-1"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            required
-          />
-        </div>
+      <Card>
+        <form noValidate className="space-y-5" onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="adminKey" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Admin key <span className="text-red-500">*</span>
+            </label>
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+                <KeyIcon className="h-4 w-4 text-slate-400" />
+              </span>
+              <input
+                id="adminKey"
+                type="password"
+                autoComplete="off"
+                className="input-base pl-9"
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
-        <Button type="submit" loading={submitting} disabled={!key.trim()}>
-          Sign in
-        </Button>
-      </form>
+          <Button
+            type="submit"
+            size="lg"
+            fullWidth
+            loading={submitting}
+            disabled={!key.trim()}
+            trailingIcon={<ArrowRightIcon className="h-4 w-4" />}
+          >
+            Sign in
+          </Button>
+        </form>
+
+        <div className="mt-5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-4 py-3 text-xs text-muted">
+          Your key is kept in this browser tab only (sessionStorage) and sent as the{' '}
+          <code className="rounded bg-slate-200 dark:bg-slate-700 px-1 py-0.5 text-[11px]">X-Admin-Key</code>{' '}
+          header on every admin request. The server compares a SHA-256 hash of it in constant
+          time.
+        </div>
+      </Card>
     </div>
   );
 }

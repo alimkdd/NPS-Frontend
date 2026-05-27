@@ -5,6 +5,7 @@ import {
   type PagedResult,
   type SubscriptionFilter,
   type SubscriptionResponse,
+  type SubscriptionStats,
   type UnsubscribeAck,
   type UpsertSubscriptionAck,
   type UpsertSubscriptionRequest,
@@ -107,6 +108,12 @@ export const api = {
 
   getSubscription: (id: string, signal?: AbortSignal) =>
     request<SubscriptionResponse>(`/api/admin/subscriptions/${id}`, {
+      admin: true,
+      signal,
+    }),
+
+  getStats: (signal?: AbortSignal) =>
+    request<SubscriptionStats>(`/api/admin/subscriptions/stats`, {
       admin: true,
       signal,
     }),

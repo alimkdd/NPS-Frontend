@@ -2,12 +2,26 @@ import { forwardRef, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import {
+  UserIcon,
+  IdentificationIcon,
+  ChatBubbleLeftRightIcon,
+  TagIcon,
+  ShieldCheckIcon,
+  CheckBadgeIcon,
+  EnvelopeIcon,
+  BuildingOfficeIcon,
+  PhoneIcon,
+  HomeModernIcon,
+  SparklesIcon,
+} from '@heroicons/react/24/outline';
 import { api } from '../lib/api';
 import { ApiError, type UpsertSubscriptionAck } from '../lib/types';
 import { buildSubscriptionSchema, type SubscriptionFormValues } from '../schemas/subscription';
 import { Button } from '../components/ui/Button';
 import { Alert } from '../components/ui/Alert';
 import { Spinner } from '../components/ui/Spinner';
+import { Card, SectionHeading } from '../components/ui/Card';
 import { FieldError } from '../components/forms/FieldError';
 
 export function SubscribePage() {
@@ -75,6 +89,7 @@ export function SubscribePage() {
       setAck(data);
       setServerErrors([]);
       reset();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     onError: (err) => {
       if (err instanceof ApiError) {
@@ -82,11 +97,16 @@ export function SubscribePage() {
       } else {
         setServerErrors(['Something went wrong. Please try again.']);
       }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     },
   });
 
   if (lookupsQuery.isLoading) {
-    return <Spinner label="Loading subscription options…" />;
+    return (
+      <Card>
+        <Spinner label="Loading subscription options…" />
+      </Card>
+    );
   }
 
   if (lookupsQuery.isError) {
@@ -100,17 +120,12 @@ export function SubscribePage() {
   const lookups = lookupsQuery.data!;
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Newsletter preferences</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Tell us who you are, what you’re interested in, and how you’d like to hear from us.
-        </p>
-      </header>
+    <div className="space-y-8">
+      <Hero />
 
       {ack && (
-        <Alert tone="success" title="Preferences saved">
-          Thank you — your preferences have been recorded.
+        <Alert tone="success" title="You’re all set">
+          Your preferences have been recorded. We’ll be in touch through the channels you chose.
           <div className="mt-1 text-xs opacity-80">Reference: {ack.correlationId}</div>
         </Alert>
       )}
@@ -127,86 +142,106 @@ export function SubscribePage() {
 
       <form
         noValidate
-        className="space-y-6 bg-white rounded-lg border border-slate-200 p-6 shadow-sm"
+        className="space-y-6 animate-fade-in"
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
       >
-        <section aria-labelledby="about-you" className="space-y-4">
-          <h2 id="about-you" className="text-base font-semibold text-slate-900">
-            About you
-          </h2>
+        <Card>
+          <SectionHeading
+            icon={<UserIcon className="h-5 w-5" />}
+            title="About you"
+            description="The basics so we can address you properly."
+          />
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextInput
+                label="First name"
+                autoComplete="given-name"
+                required
+                error={errors.firstName?.message}
+                {...register('firstName')}
+              />
+              <TextInput
+                label="Last name"
+                autoComplete="family-name"
+                required
+                error={errors.lastName?.message}
+                {...register('lastName')}
+              />
+            </div>
+
             <TextInput
-              label="First name"
-              autoComplete="given-name"
+              label="Email address"
+              type="email"
+              autoComplete="email"
               required
-              error={errors.firstName?.message}
-              {...register('firstName')}
+              leadingIcon={<EnvelopeIcon className="h-4 w-4 text-slate-400" />}
+              error={errors.email?.message}
+              {...register('email')}
             />
+
             <TextInput
-              label="Last name"
-              autoComplete="family-name"
-              required
-              error={errors.lastName?.message}
-              {...register('lastName')}
+              label="Organisation"
+              description="Optional — if you’re subscribing on behalf of a company."
+              autoComplete="organization"
+              leadingIcon={<BuildingOfficeIcon className="h-4 w-4 text-slate-400" />}
+              error={errors.organisation?.message}
+              {...register('organisation')}
             />
           </div>
+        </Card>
 
-          <TextInput
-            label="Email address"
-            type="email"
-            autoComplete="email"
+        <Card>
+          <SectionHeading
+            icon={<IdentificationIcon className="h-5 w-5" />}
+            title="I am a…"
+            description="Pick the option that best describes you."
             required
-            error={errors.email?.message}
-            {...register('email')}
           />
-
-          <TextInput
-            label="Organisation"
-            description="Optional"
-            autoComplete="organization"
-            error={errors.organisation?.message}
-            {...register('organisation')}
-          />
-        </section>
-
-        <fieldset className="space-y-3">
-          <legend className="text-base font-semibold text-slate-900">
-            I am a… <span className="text-red-600">*</span>
-          </legend>
           <Controller
             name="subscriberTypeId"
             control={control}
             render={({ field }) => (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {lookups.subscriberTypes.map((type) => (
-                  <label
-                    key={type.id}
-                    className="flex items-center gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50 cursor-pointer"
-                  >
-                    <input
-                      type="radio"
-                      name={field.name}
-                      value={type.id}
-                      checked={field.value === type.id}
-                      onChange={() => field.onChange(type.id)}
-                      onBlur={field.onBlur}
-                      className="h-4 w-4 text-brand-600 border-slate-300 focus:ring-brand-500"
-                    />
-                    {type.name}
-                  </label>
-                ))}
+              <div className="grid gap-2 sm:grid-cols-2" role="radiogroup">
+                {lookups.subscriberTypes.map((type) => {
+                  const selected = field.value === type.id;
+                  return (
+                    <label
+                      key={type.id}
+                      className={`relative flex items-center gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition ${
+                        selected
+                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 ring-1 ring-brand-500/20'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={field.name}
+                        value={type.id}
+                        checked={selected}
+                        onChange={() => field.onChange(type.id)}
+                        onBlur={field.onBlur}
+                        className="h-4 w-4 text-brand-600 border-slate-300 focus:ring-brand-500"
+                      />
+                      <span className="font-medium text-slate-900 dark:text-slate-100">
+                        {type.name}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             )}
           />
           <FieldError id="subscriberTypeId-error" message={errors.subscriberTypeId?.message} />
-        </fieldset>
+        </Card>
 
-        <fieldset className="space-y-3">
-          <legend className="text-base font-semibold text-slate-900">
-            How can we contact you? <span className="text-red-600">*</span>
-          </legend>
-          <p className="text-sm text-slate-600">Pick one or more options.</p>
+        <Card>
+          <SectionHeading
+            icon={<ChatBubbleLeftRightIcon className="h-5 w-5" />}
+            title="How can we contact you?"
+            description="Pick one or more methods. Phone, SMS, and Post each require extra details."
+            required
+          />
           <Controller
             name="communicationPreferenceIds"
             control={control}
@@ -217,7 +252,11 @@ export function SubscribePage() {
                   return (
                     <label
                       key={pref.id}
-                      className="flex items-center gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50 cursor-pointer"
+                      className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition ${
+                        checked
+                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 ring-1 ring-brand-500/20'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      }`}
                     >
                       <input
                         type="checkbox"
@@ -229,9 +268,11 @@ export function SubscribePage() {
                           field.onChange(next);
                         }}
                         onBlur={field.onBlur}
-                        className="h-4 w-4 rounded text-brand-600 border-slate-300 focus:ring-brand-500"
+                        className="checkbox-base"
                       />
-                      {pref.name}
+                      <span className="font-medium text-slate-900 dark:text-slate-100">
+                        {pref.name}
+                      </span>
                     </label>
                   );
                 })}
@@ -242,56 +283,68 @@ export function SubscribePage() {
             id="communicationPreferenceIds-error"
             message={errors.communicationPreferenceIds?.message as string | undefined}
           />
-        </fieldset>
 
-        {phoneOrSmsSelected && (
-          <TextInput
-            label="Phone number"
-            type="tel"
-            autoComplete="tel"
+          {phoneOrSmsSelected && (
+            <div className="mt-5 animate-fade-in">
+              <TextInput
+                label="Phone number"
+                type="tel"
+                autoComplete="tel"
+                required
+                leadingIcon={<PhoneIcon className="h-4 w-4 text-slate-400" />}
+                error={errors.phoneNumber?.message}
+                description="Required because you selected Phone or SMS."
+                {...register('phoneNumber')}
+              />
+            </div>
+          )}
+
+          {postSelected && (
+            <div className="mt-5 animate-fade-in">
+              <label
+                htmlFor="postalAddress"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+              >
+                Postal address <span className="text-red-500">*</span>
+              </label>
+              <p className="text-xs text-subtle mb-1.5">
+                Required because you selected Post.
+              </p>
+              <textarea
+                id="postalAddress"
+                rows={3}
+                aria-invalid={!!errors.postalAddress}
+                aria-describedby={errors.postalAddress ? 'postalAddress-error' : undefined}
+                className="input-base"
+                {...register('postalAddress')}
+              />
+              <FieldError id="postalAddress-error" message={errors.postalAddress?.message} />
+            </div>
+          )}
+        </Card>
+
+        <Card>
+          <SectionHeading
+            icon={<TagIcon className="h-5 w-5" />}
+            title="What would you like to hear about?"
+            description="Pick everything that interests you — you can change this any time."
             required
-            error={errors.phoneNumber?.message}
-            description="Required because you selected Phone or SMS."
-            {...register('phoneNumber')}
           />
-        )}
-
-        {postSelected && (
-          <div>
-            <label
-              htmlFor="postalAddress"
-              className="block text-sm font-medium text-slate-700"
-            >
-              Postal address <span className="text-red-600">*</span>
-            </label>
-            <p className="text-xs text-slate-500 mb-1">Required because you selected Post.</p>
-            <textarea
-              id="postalAddress"
-              rows={3}
-              aria-invalid={!!errors.postalAddress}
-              aria-describedby={errors.postalAddress ? 'postalAddress-error' : undefined}
-              className="input-base"
-              {...register('postalAddress')}
-            />
-            <FieldError id="postalAddress-error" message={errors.postalAddress?.message} />
-          </div>
-        )}
-
-        <fieldset className="space-y-3">
-          <legend className="text-base font-semibold text-slate-900">
-            What would you like to hear about? <span className="text-red-600">*</span>
-          </legend>
           <Controller
             name="interestIds"
             control={control}
             render={({ field }) => (
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {lookups.interests.map((interest) => {
                   const checked = field.value.includes(interest.id);
                   return (
                     <label
                       key={interest.id}
-                      className="flex items-center gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50 cursor-pointer"
+                      className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition ${
+                        checked
+                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 ring-1 ring-brand-500/20'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      }`}
                     >
                       <input
                         type="checkbox"
@@ -303,9 +356,11 @@ export function SubscribePage() {
                           field.onChange(next);
                         }}
                         onBlur={field.onBlur}
-                        className="h-4 w-4 rounded text-brand-600 border-slate-300 focus:ring-brand-500"
+                        className="checkbox-base"
                       />
-                      {interest.name}
+                      <span className="font-medium text-slate-900 dark:text-slate-100">
+                        {interest.name}
+                      </span>
                     </label>
                   );
                 })}
@@ -313,26 +368,42 @@ export function SubscribePage() {
             )}
           />
           <FieldError id="interestIds-error" message={errors.interestIds?.message as string | undefined} />
-        </fieldset>
+        </Card>
 
-        <div className="flex items-start gap-3 rounded-md bg-slate-50 border border-slate-200 px-4 py-3">
-          <input
-            id="consentGiven"
-            type="checkbox"
-            aria-invalid={!!errors.consentGiven}
-            aria-describedby={errors.consentGiven ? 'consentGiven-error' : undefined}
-            className="mt-0.5 h-4 w-4 rounded text-brand-600 border-slate-300 focus:ring-brand-500"
-            {...register('consentGiven')}
+        <Card>
+          <SectionHeading
+            icon={<ShieldCheckIcon className="h-5 w-5" />}
+            title="Consent"
+            description="We won’t send anything without your permission."
+            required
           />
-          <label htmlFor="consentGiven" className="text-sm text-slate-700">
-            I consent to receive newsletter communications from SDS / Aspire Software
-            using the methods I selected above. <span className="text-red-600">*</span>
+          <label className="flex items-start gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3 cursor-pointer">
+            <input
+              id="consentGiven"
+              type="checkbox"
+              aria-invalid={!!errors.consentGiven}
+              aria-describedby={errors.consentGiven ? 'consentGiven-error' : undefined}
+              className="checkbox-base mt-0.5"
+              {...register('consentGiven')}
+            />
+            <span className="text-sm text-slate-700 dark:text-slate-300">
+              I consent to receive newsletter communications from SDS / Aspire Software using the
+              methods I selected above.
+            </span>
           </label>
-        </div>
-        <FieldError id="consentGiven-error" message={errors.consentGiven?.message as string | undefined} />
+          <FieldError id="consentGiven-error" message={errors.consentGiven?.message as string | undefined} />
+        </Card>
 
-        <div className="flex justify-end">
-          <Button type="submit" loading={isSubmitting || mutation.isPending}>
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-end gap-3">
+          <p className="text-xs text-subtle sm:mr-auto">
+            By submitting you can unsubscribe at any time via the link in the header.
+          </p>
+          <Button
+            type="submit"
+            size="lg"
+            loading={isSubmitting || mutation.isPending}
+            leadingIcon={<CheckBadgeIcon className="h-4 w-4" />}
+          >
             Save preferences
           </Button>
         </div>
@@ -341,14 +412,47 @@ export function SubscribePage() {
   );
 }
 
+function Hero() {
+  return (
+    <section className="relative overflow-hidden rounded-2xl bg-brand-gradient text-white px-6 sm:px-10 py-10 sm:py-12 shadow-card-lg">
+      <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.4),_transparent_60%)]" />
+      <div className="relative max-w-2xl">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur px-3 py-1 text-xs font-medium ring-1 ring-white/20">
+          <SparklesIcon className="h-3.5 w-3.5" />
+          Newsletter Preferences
+        </span>
+        <h1 className="mt-4 text-2xl sm:text-4xl font-semibold leading-tight">
+          Choose what you hear about — and how.
+        </h1>
+        <p className="mt-3 text-white/90 max-w-xl text-sm sm:text-base">
+          Tell us who you are, the topics you care about, and the channels you’re happy to be
+          reached on. You stay in control: update or unsubscribe at any time.
+        </p>
+        <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-white/80">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1">
+            <HomeModernIcon className="h-3.5 w-3.5" /> Property updates
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1">
+            Planning & development
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1">
+            Land sourcing
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 interface TextInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   description?: string;
   error?: string;
+  leadingIcon?: React.ReactNode;
 }
 
 const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function TextInput(
-  { label, description, error, required, id, name, ...rest },
+  { label, description, error, required, leadingIcon, id, name, ...rest },
   ref,
 ) {
   const inputId = id ?? name ?? label.replace(/\s+/g, '-').toLowerCase();
@@ -356,23 +460,30 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function TextInpu
   const descId = description ? `${inputId}-desc` : undefined;
   return (
     <div>
-      <label htmlFor={inputId} className="block text-sm font-medium text-slate-700">
-        {label} {required && <span className="text-red-600">*</span>}
+      <label htmlFor={inputId} className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+        {label} {required && <span className="text-red-500">*</span>}
       </label>
       {description && (
-        <p id={descId} className="text-xs text-slate-500 mb-1">
+        <p id={descId} className="text-xs text-subtle mb-1.5">
           {description}
         </p>
       )}
-      <input
-        id={inputId}
-        name={name}
-        ref={ref}
-        aria-invalid={!!error}
-        aria-describedby={[descId, errorId].filter(Boolean).join(' ') || undefined}
-        className="input-base"
-        {...rest}
-      />
+      <div className="relative mt-1">
+        {leadingIcon && (
+          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+            {leadingIcon}
+          </span>
+        )}
+        <input
+          id={inputId}
+          name={name}
+          ref={ref}
+          aria-invalid={!!error}
+          aria-describedby={[descId, errorId].filter(Boolean).join(' ') || undefined}
+          className={`input-base ${leadingIcon ? 'pl-9' : ''}`}
+          {...rest}
+        />
+      </div>
       <FieldError id={errorId ?? `${inputId}-error`} message={error} />
     </div>
   );

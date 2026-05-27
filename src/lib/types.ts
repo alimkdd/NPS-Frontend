@@ -59,6 +59,12 @@ export interface PagedResult<T> {
   pageSize: number;
 }
 
+export interface SubscriptionStats {
+  totalActive: number;
+  newLast7Days: number;
+  newLast30Days: number;
+}
+
 export interface SubscriptionFilter {
   searchTerm?: string;
   subscriberTypeId?: number;
