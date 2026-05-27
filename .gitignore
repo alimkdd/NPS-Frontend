@@ -30,3 +30,7 @@ dist-ssr
 
 # Tooling
 .claude/
+
+# Local mkcert dev certificates — generate your own via `mkcert localhost 127.0.0.1 ::1`
+certs/
+*.pem
