@@ -4,6 +4,7 @@ import { queryClient } from './lib/queryClient';
 import { ThemeProvider } from './lib/theme';
 import { AppLayout } from './components/layout/AppLayout';
 import { AdminGuard } from './components/AdminGuard';
+import { AppToaster } from './components/ui/AppToaster';
 import { SubscribePage } from './pages/SubscribePage';
 import { UnsubscribePage } from './pages/UnsubscribePage';
 import { AdminLoginPage } from './pages/AdminLoginPage';
@@ -14,6 +15,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
+        <AppToaster />
         <BrowserRouter>
           <Routes>
             <Route element={<AppLayout />}>

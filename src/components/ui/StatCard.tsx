@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 
 interface StatCardProps {
   icon: ReactNode;
@@ -17,20 +17,20 @@ const accentStyles: Record<NonNullable<StatCardProps['accent']>, string> = {
 
 export function StatCard({ icon, label, value, hint, loading, accent = 'brand' }: StatCardProps) {
   return (
-    <div className="card p-5 animate-fade-in">
+    <div className="card p-6 animate-fade-in">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-subtle">{label}</p>
-        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${accentStyles[accent]}`}>
+        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${accentStyles[accent]}`}>
           {icon}
         </div>
       </div>
-      <div className="mt-3">
+      <div className="mt-4">
         {loading ? (
-          <div className="h-7 w-20 rounded bg-slate-200 dark:bg-slate-800 animate-pulse-soft" />
+          <div className="h-8 w-24 rounded bg-slate-200 dark:bg-midnight-800 animate-pulse-soft" />
         ) : (
-          <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{value}</p>
+          <p className="text-3xl font-semibold text-slate-900 dark:text-slate-100 tabular-nums">{value}</p>
         )}
-        {hint && !loading && <p className="text-xs text-subtle mt-1">{hint}</p>}
+        {hint && !loading && <p className="text-xs text-subtle mt-1.5">{hint}</p>}
       </div>
     </div>
   );

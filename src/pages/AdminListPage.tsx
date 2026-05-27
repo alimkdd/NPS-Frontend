@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -15,13 +16,14 @@ import {
 } from '@heroicons/react/24/outline';
 import { api } from '../lib/api';
 import { adminAuth } from '../lib/auth';
-import { ApiError, type SubscriptionFilter } from '../lib/types';
+import { ApiError, type SubscriptionFilter, type SubscriptionResponse } from '../lib/types';
 import { Button } from '../components/ui/Button';
 import { Alert } from '../components/ui/Alert';
 import { Card } from '../components/ui/Card';
 import { StatCard } from '../components/ui/StatCard';
 import { EmptyState } from '../components/ui/EmptyState';
 import { TableRowSkeleton } from '../components/ui/Skeleton';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
 export function AdminListPage() {
   const navigate = useNavigate();
@@ -29,7 +31,7 @@ export function AdminListPage() {
 
   const [filter, setFilter] = useState<SubscriptionFilter>({ page: 1, pageSize: 10 });
   const [searchInput, setSearchInput] = useState('');
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [target, setTarget] = useState<SubscriptionResponse | null>(null);
 
   const lookupsQuery = useQuery({
     queryKey: ['lookups'],
@@ -49,13 +51,21 @@ export function AdminListPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.deleteSubscription(id),
-    onSuccess: () => {
-      setDeleteError(null);
+    onSuccess: (_, id) => {
+      const removed = target;
+      setTarget(null);
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
       queryClient.invalidateQueries({ queryKey: ['adminStats'] });
+      toast.success('Subscription removed', {
+        description: removed
+          ? `${removed.firstName} ${removed.lastName} (${removed.email}) will stop receiving newsletters.`
+          : `Subscription ${id} was removed.`,
+      });
     },
     onError: (err) => {
-      setDeleteError(err instanceof ApiError ? err.message : 'Delete failed.');
+      toast.error("Couldn't delete", {
+        description: err instanceof ApiError ? err.message : 'Unexpected error.',
+      });
     },
   });
 
@@ -69,6 +79,7 @@ export function AdminListPage() {
 
   function handleSignOut() {
     adminAuth.clear();
+    toast.success('Signed out');
     navigate('/admin', { replace: true });
   }
 
@@ -87,16 +98,16 @@ export function AdminListPage() {
     !!filter.interestId;
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+    <div className="space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400">
             Dashboard
           </p>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100 mt-2">
             Subscriptions
           </h1>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-2 text-sm text-muted max-w-xl">
             Live (non-deleted) subscribers. Use filters and search to narrow the list.
           </p>
         </div>
@@ -109,7 +120,7 @@ export function AdminListPage() {
         </Button>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
           icon={<UsersIcon className="h-4 w-4" />}
           label="Total active"
@@ -137,14 +148,14 @@ export function AdminListPage() {
 
       <Card padded={false}>
         <form
-          className="flex flex-wrap items-end gap-3 p-4 border-b border-muted"
+          className="flex flex-wrap items-end gap-4 p-5 border-b border-muted"
           onSubmit={(e) => {
             e.preventDefault();
             applyFilter({ searchTerm: searchInput || undefined });
           }}
         >
-          <div className="flex-1 min-w-[220px]">
-            <label htmlFor="search" className="block text-xs font-medium text-subtle mb-1">
+          <div className="flex-1 min-w-[240px]">
+            <label htmlFor="search" className="block text-xs font-medium text-subtle mb-1.5">
               Search
             </label>
             <div className="relative">
@@ -155,7 +166,7 @@ export function AdminListPage() {
                 id="search"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Name or email…"
+                placeholder="Name or email..."
                 className="input-base pl-9"
               />
             </div>
@@ -193,12 +204,6 @@ export function AdminListPage() {
           )}
         </form>
 
-        {deleteError && (
-          <div className="px-4 pt-4">
-            <Alert tone="error">{deleteError}</Alert>
-          </div>
-        )}
-
         {listQuery.isLoading ? (
           <table className="min-w-full">
             <tbody>
@@ -208,8 +213,8 @@ export function AdminListPage() {
             </tbody>
           </table>
         ) : listQuery.isError ? (
-          <div className="p-4">
-            <Alert tone="error" title="Couldn’t load subscriptions">
+          <div className="p-5">
+            <Alert tone="error" title="Couldn't load subscriptions">
               {listQuery.error instanceof ApiError ? listQuery.error.message : 'Unexpected error.'}
             </Alert>
           </div>
@@ -220,7 +225,7 @@ export function AdminListPage() {
             description={
               hasFilters
                 ? 'Try clearing the filters or broadening your search.'
-                : 'Once people subscribe, they’ll appear here.'
+                : "Once people subscribe, they'll appear here."
             }
             action={
               hasFilters ? (
@@ -238,37 +243,37 @@ export function AdminListPage() {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm">
-              <thead className="bg-slate-50 dark:bg-slate-800/50 text-left text-xs uppercase tracking-wider text-subtle">
+            <table className="min-w-full divide-y divide-slate-200 dark:divide-midnight-800 text-sm">
+              <thead className="bg-slate-50 dark:bg-midnight-800/50 text-left text-xs uppercase tracking-wider text-subtle">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Subscriber</th>
-                  <th className="px-4 py-3 font-semibold">Type</th>
-                  <th className="px-4 py-3 font-semibold">Channels</th>
-                  <th className="px-4 py-3 font-semibold">Interests</th>
-                  <th className="px-4 py-3 font-semibold">Created</th>
-                  <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                  <th className="px-5 py-4 font-semibold">Subscriber</th>
+                  <th className="px-5 py-4 font-semibold">Type</th>
+                  <th className="px-5 py-4 font-semibold">Channels</th>
+                  <th className="px-5 py-4 font-semibold">Interests</th>
+                  <th className="px-5 py-4 font-semibold">Created</th>
+                  <th className="px-5 py-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100 dark:divide-midnight-800">
                 {result.items.map((sub) => (
                   <tr
                     key={sub.id}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                    className="hover:bg-slate-50 dark:hover:bg-midnight-800/40 transition-colors"
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-5 py-4">
                       <div className="font-medium text-slate-900 dark:text-slate-100">
                         {sub.firstName} {sub.lastName}
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-subtle mt-0.5">
+                      <div className="flex items-center gap-1 text-xs text-subtle mt-1">
                         <EnvelopeIcon className="h-3 w-3 flex-none" />
                         <span className="truncate">{sub.email}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-5 py-4">
                       <span className="pill">{sub.subscriberType.name}</span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
+                    <td className="px-5 py-4">
+                      <div className="flex flex-wrap gap-1.5">
                         {sub.communicationPreferences.map((c) => (
                           <span key={c.id} className="pill">
                             {c.name}
@@ -276,8 +281,8 @@ export function AdminListPage() {
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
+                    <td className="px-5 py-4">
+                      <div className="flex flex-wrap gap-1.5">
                         {sub.interests.map((i) => (
                           <span key={i.id} className="pill">
                             {i.name}
@@ -285,26 +290,16 @@ export function AdminListPage() {
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-subtle whitespace-nowrap">
+                    <td className="px-5 py-4 text-subtle whitespace-nowrap">
                       {new Date(sub.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-5 py-4 text-right">
                       <Button
-                        variant="ghost"
+                        variant="danger"
                         size="sm"
                         leadingIcon={<TrashIcon className="h-4 w-4" />}
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              `Soft-delete ${sub.email}? They will stop receiving newsletters.`,
-                            )
-                          ) {
-                            deleteMutation.mutate(sub.id);
-                          }
-                        }}
-                        loading={
-                          deleteMutation.isPending && deleteMutation.variables === sub.id
-                        }
+                        onClick={() => setTarget(sub)}
+                        aria-label={`Delete subscription for ${sub.email}`}
                       >
                         Delete
                       </Button>
@@ -317,7 +312,7 @@ export function AdminListPage() {
         )}
 
         {result && result.totalCount > 0 && (
-          <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-muted text-sm">
+          <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-muted text-sm">
             <span className="text-subtle">
               Page {result.page} of {totalPages} —{' '}
               <span className="font-medium text-slate-700 dark:text-slate-300">
@@ -348,6 +343,34 @@ export function AdminListPage() {
           </div>
         )}
       </Card>
+
+      <ConfirmDialog
+        open={!!target}
+        onClose={() => setTarget(null)}
+        onConfirm={() => target && deleteMutation.mutate(target.id)}
+        loading={deleteMutation.isPending}
+        title="Delete this subscription?"
+        confirmLabel="Yes, delete"
+        cancelLabel="Keep subscription"
+        tone="danger"
+        description={
+          target && (
+            <div className="space-y-2">
+              <p>
+                <span className="font-medium text-slate-900 dark:text-slate-100">
+                  {target.firstName} {target.lastName}
+                </span>{' '}
+                <span className="text-subtle">({target.email})</span> will stop receiving
+                newsletters.
+              </p>
+              <p className="text-xs text-subtle">
+                This is a soft delete — the record stays in the database, just hidden from
+                the active list.
+              </p>
+            </div>
+          )
+        }
+      />
     </div>
   );
 }
@@ -363,7 +386,7 @@ function FilterSelect({ label, options, value, onChange }: FilterSelectProps) {
   const id = `filter-${label.replace(/\s+/g, '-').toLowerCase()}`;
   return (
     <div className="w-full sm:w-44">
-      <label htmlFor={id} className="block text-xs font-medium text-subtle mb-1">
+      <label htmlFor={id} className="block text-xs font-medium text-subtle mb-1.5">
         {label}
       </label>
       <select

@@ -1,11 +1,11 @@
-interface SkeletonProps {
+﻿interface SkeletonProps {
   className?: string;
 }
 
 export function Skeleton({ className = '' }: SkeletonProps) {
   return (
     <div
-      className={`rounded bg-slate-200 dark:bg-slate-800 animate-pulse-soft ${className}`}
+      className={`rounded bg-slate-200 dark:bg-midnight-800 animate-pulse-soft ${className}`}
       aria-hidden="true"
     />
   );

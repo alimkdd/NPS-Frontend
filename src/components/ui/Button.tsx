@@ -1,4 +1,4 @@
-import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from 'react';
+﻿import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'subtle';
 type Size = 'sm' | 'md' | 'lg';
@@ -16,13 +16,13 @@ const variantStyles: Record<Variant, string> = {
   primary:
     'bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-800 disabled:bg-brand-600/50 dark:disabled:bg-brand-600/30',
   secondary:
-    'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 active:bg-slate-100 dark:active:bg-slate-700/70 disabled:opacity-60',
+    'bg-white dark:bg-midnight-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-midnight-700 shadow-sm hover:bg-slate-50 dark:hover:bg-midnight-700 active:bg-slate-100 dark:active:bg-slate-700/70 disabled:opacity-60',
   danger:
     'bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800 disabled:bg-red-600/50',
   ghost:
-    'bg-transparent text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-60',
+    'bg-transparent text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-midnight-800 disabled:opacity-60',
   subtle:
-    'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-60',
+    'bg-slate-100 dark:bg-midnight-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-midnight-700 disabled:opacity-60',
 };
 
 const sizeStyles: Record<Size, string> = {

@@ -2,6 +2,7 @@ import { forwardRef, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   UserIcon,
   IdentificationIcon,
@@ -90,6 +91,9 @@ export function SubscribePage() {
       setServerErrors([]);
       reset();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      toast.success('Preferences saved', {
+        description: "You'll start receiving newsletters through the channels you picked.",
+      });
     },
     onError: (err) => {
       if (err instanceof ApiError) {
@@ -98,13 +102,16 @@ export function SubscribePage() {
         setServerErrors(['Something went wrong. Please try again.']);
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      toast.error("We couldn't save your preferences", {
+        description: 'Check the highlighted fields and try again.',
+      });
     },
   });
 
   if (lookupsQuery.isLoading) {
     return (
       <Card>
-        <Spinner label="Loading subscription options…" />
+        <Spinner label="Loading subscription options..." />
       </Card>
     );
   }
@@ -112,7 +119,7 @@ export function SubscribePage() {
   if (lookupsQuery.isError) {
     return (
       <Alert tone="error" title="Unable to load form">
-        We couldn’t load the subscription options. Make sure the API is running, then refresh.
+        We couldn't load the subscription options. Make sure the API is running, then refresh.
       </Alert>
     );
   }
@@ -120,18 +127,18 @@ export function SubscribePage() {
   const lookups = lookupsQuery.data!;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10 max-w-4xl mx-auto">
       <Hero />
 
       {ack && (
-        <Alert tone="success" title="You’re all set">
-          Your preferences have been recorded. We’ll be in touch through the channels you chose.
+        <Alert tone="success" title="You're all set">
+          Your preferences have been recorded. We'll be in touch through the channels you chose.
           <div className="mt-1 text-xs opacity-80">Reference: {ack.correlationId}</div>
         </Alert>
       )}
 
       {serverErrors.length > 0 && (
-        <Alert tone="error" title="We couldn’t save your preferences">
+        <Alert tone="error" title="We couldn't save your preferences">
           <ul className="list-disc list-inside space-y-0.5">
             {serverErrors.map((e) => (
               <li key={e}>{e}</li>
@@ -142,18 +149,18 @@ export function SubscribePage() {
 
       <form
         noValidate
-        className="space-y-6 animate-fade-in"
+        className="space-y-8 animate-fade-in"
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
       >
-        <Card>
+        <Card className="p-7 sm:p-8">
           <SectionHeading
             icon={<UserIcon className="h-5 w-5" />}
             title="About you"
             description="The basics so we can address you properly."
           />
 
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-5">
+            <div className="grid gap-5 sm:grid-cols-2">
               <TextInput
                 label="First name"
                 autoComplete="given-name"
@@ -182,7 +189,7 @@ export function SubscribePage() {
 
             <TextInput
               label="Organisation"
-              description="Optional — if you’re subscribing on behalf of a company."
+              description="Optional — if you're subscribing on behalf of a company."
               autoComplete="organization"
               leadingIcon={<BuildingOfficeIcon className="h-4 w-4 text-slate-400" />}
               error={errors.organisation?.message}
@@ -191,10 +198,10 @@ export function SubscribePage() {
           </div>
         </Card>
 
-        <Card>
+        <Card className="p-7 sm:p-8">
           <SectionHeading
             icon={<IdentificationIcon className="h-5 w-5" />}
-            title="I am a…"
+            title="I am a..."
             description="Pick the option that best describes you."
             required
           />
@@ -202,16 +209,16 @@ export function SubscribePage() {
             name="subscriberTypeId"
             control={control}
             render={({ field }) => (
-              <div className="grid gap-2 sm:grid-cols-2" role="radiogroup">
+              <div className="grid gap-3 sm:grid-cols-2" role="radiogroup">
                 {lookups.subscriberTypes.map((type) => {
                   const selected = field.value === type.id;
                   return (
                     <label
                       key={type.id}
-                      className={`relative flex items-center gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition ${
+                      className={`relative flex items-center gap-3 rounded-xl border px-4 py-3.5 text-sm cursor-pointer transition ${
                         selected
                           ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 ring-1 ring-brand-500/20'
-                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                          : 'border-slate-200 dark:border-midnight-700 hover:border-slate-300 dark:hover:border-midnight-600 hover:bg-slate-50 dark:hover:bg-midnight-800/50'
                       }`}
                     >
                       <input
@@ -235,7 +242,7 @@ export function SubscribePage() {
           <FieldError id="subscriberTypeId-error" message={errors.subscriberTypeId?.message} />
         </Card>
 
-        <Card>
+        <Card className="p-7 sm:p-8">
           <SectionHeading
             icon={<ChatBubbleLeftRightIcon className="h-5 w-5" />}
             title="How can we contact you?"
@@ -246,16 +253,16 @@ export function SubscribePage() {
             name="communicationPreferenceIds"
             control={control}
             render={({ field }) => (
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {lookups.communicationPreferences.map((pref) => {
                   const checked = field.value.includes(pref.id);
                   return (
                     <label
                       key={pref.id}
-                      className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition ${
+                      className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 text-sm cursor-pointer transition ${
                         checked
                           ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 ring-1 ring-brand-500/20'
-                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                          : 'border-slate-200 dark:border-midnight-700 hover:border-slate-300 dark:hover:border-midnight-600 hover:bg-slate-50 dark:hover:bg-midnight-800/50'
                       }`}
                     >
                       <input
@@ -285,7 +292,7 @@ export function SubscribePage() {
           />
 
           {phoneOrSmsSelected && (
-            <div className="mt-5 animate-fade-in">
+            <div className="mt-6 animate-fade-in">
               <TextInput
                 label="Phone number"
                 type="tel"
@@ -300,7 +307,7 @@ export function SubscribePage() {
           )}
 
           {postSelected && (
-            <div className="mt-5 animate-fade-in">
+            <div className="mt-6 animate-fade-in">
               <label
                 htmlFor="postalAddress"
                 className="block text-sm font-medium text-slate-700 dark:text-slate-300"
@@ -323,7 +330,7 @@ export function SubscribePage() {
           )}
         </Card>
 
-        <Card>
+        <Card className="p-7 sm:p-8">
           <SectionHeading
             icon={<TagIcon className="h-5 w-5" />}
             title="What would you like to hear about?"
@@ -334,16 +341,16 @@ export function SubscribePage() {
             name="interestIds"
             control={control}
             render={({ field }) => (
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {lookups.interests.map((interest) => {
                   const checked = field.value.includes(interest.id);
                   return (
                     <label
                       key={interest.id}
-                      className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition ${
+                      className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 text-sm cursor-pointer transition ${
                         checked
                           ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 ring-1 ring-brand-500/20'
-                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                          : 'border-slate-200 dark:border-midnight-700 hover:border-slate-300 dark:hover:border-midnight-600 hover:bg-slate-50 dark:hover:bg-midnight-800/50'
                       }`}
                     >
                       <input
@@ -370,14 +377,14 @@ export function SubscribePage() {
           <FieldError id="interestIds-error" message={errors.interestIds?.message as string | undefined} />
         </Card>
 
-        <Card>
+        <Card className="p-7 sm:p-8">
           <SectionHeading
             icon={<ShieldCheckIcon className="h-5 w-5" />}
             title="Consent"
-            description="We won’t send anything without your permission."
+            description="We won't send anything without your permission."
             required
           />
-          <label className="flex items-start gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3 cursor-pointer">
+          <label className="flex items-start gap-3 rounded-xl border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-800/50 px-4 py-4 cursor-pointer">
             <input
               id="consentGiven"
               type="checkbox"
@@ -394,7 +401,7 @@ export function SubscribePage() {
           <FieldError id="consentGiven-error" message={errors.consentGiven?.message as string | undefined} />
         </Card>
 
-        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-end gap-3">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-end gap-3 pt-2">
           <p className="text-xs text-subtle sm:mr-auto">
             By submitting you can unsubscribe at any time via the link in the header.
           </p>
@@ -414,28 +421,28 @@ export function SubscribePage() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden rounded-2xl bg-brand-gradient text-white px-6 sm:px-10 py-10 sm:py-12 shadow-card-lg">
+    <section className="relative overflow-hidden rounded-3xl bg-brand-gradient text-white px-8 sm:px-12 py-12 sm:py-16 shadow-card-lg">
       <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.4),_transparent_60%)]" />
       <div className="relative max-w-2xl">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur px-3 py-1 text-xs font-medium ring-1 ring-white/20">
           <SparklesIcon className="h-3.5 w-3.5" />
           Newsletter Preferences
         </span>
-        <h1 className="mt-4 text-2xl sm:text-4xl font-semibold leading-tight">
+        <h1 className="mt-5 text-3xl sm:text-4xl font-semibold leading-tight">
           Choose what you hear about — and how.
         </h1>
-        <p className="mt-3 text-white/90 max-w-xl text-sm sm:text-base">
-          Tell us who you are, the topics you care about, and the channels you’re happy to be
+        <p className="mt-4 text-white/90 max-w-xl text-sm sm:text-base leading-relaxed">
+          Tell us who you are, the topics you care about, and the channels you're happy to be
           reached on. You stay in control: update or unsubscribe at any time.
         </p>
-        <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-white/80">
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1">
+        <div className="mt-6 flex flex-wrap items-center gap-2 text-xs text-white/80">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5">
             <HomeModernIcon className="h-3.5 w-3.5" /> Property updates
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1">
-            Planning & development
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5">
+            Planning &amp; development
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5">
             Land sourcing
           </span>
         </div>
@@ -468,7 +475,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function TextInpu
           {description}
         </p>
       )}
-      <div className="relative mt-1">
+      <div className="relative mt-1.5">
         {leadingIcon && (
           <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
             {leadingIcon}

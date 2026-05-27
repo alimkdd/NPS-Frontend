@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { HandRaisedIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { api } from '../lib/api';
 import { ApiError } from '../lib/types';
@@ -32,12 +33,16 @@ export function UnsubscribePage() {
       setSuccess(true);
       setServerError(null);
       reset();
+      toast.success('Unsubscribed', {
+        description: 'If we had a record for that email, it has been removed.',
+      });
     },
     onError: (err) => {
       setSuccess(false);
       setServerError(
         err instanceof ApiError ? err.message : 'Something went wrong. Please try again.',
       );
+      toast.error('Couldn’t process your request');
     },
   });
 

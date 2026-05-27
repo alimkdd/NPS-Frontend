@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { KeyIcon, LockClosedIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import { adminAuth } from '../lib/auth';
@@ -91,9 +91,9 @@ export function AdminLoginPage() {
           </Button>
         </form>
 
-        <div className="mt-5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-4 py-3 text-xs text-muted">
+        <div className="mt-5 rounded-lg bg-slate-50 dark:bg-midnight-800/50 border border-slate-200 dark:border-midnight-700 px-4 py-3 text-xs text-muted">
           Your key is kept in this browser tab only (sessionStorage) and sent as the{' '}
-          <code className="rounded bg-slate-200 dark:bg-slate-700 px-1 py-0.5 text-[11px]">X-Admin-Key</code>{' '}
+          <code className="rounded bg-slate-200 dark:bg-midnight-700 px-1 py-0.5 text-[11px]">X-Admin-Key</code>{' '}
           header on every admin request. The server compares a SHA-256 hash of it in constant
           time.
         </div>
