@@ -13,9 +13,8 @@ import {
   EnvelopeIcon,
   BuildingOfficeIcon,
   PhoneIcon,
-  HomeModernIcon,
-  SparklesIcon,
 } from '@heroicons/react/24/outline';
+import { CheckIcon } from '@heroicons/react/24/solid';
 import { api } from '../lib/api';
 import { ApiError, type UpsertSubscriptionAck } from '../lib/types';
 import { buildSubscriptionSchema, type SubscriptionFormValues } from '../schemas/subscription';
@@ -63,7 +62,8 @@ export function SubscribePage() {
     mode: 'onBlur',
   });
 
-  const selectedPrefIds = watch('communicationPreferenceIds') ?? [];
+  const watched = watch();
+  const selectedPrefIds = watched.communicationPreferenceIds ?? [];
   const preferences = lookupsQuery.data?.communicationPreferences ?? [];
   const phoneOrSmsSelected = preferences
     .filter((p) => p.code === 'PHONE' || p.code === 'SMS')
@@ -71,6 +71,31 @@ export function SubscribePage() {
   const postSelected = preferences
     .filter((p) => p.code === 'POST')
     .some((p) => selectedPrefIds.includes(p.id));
+
+  const steps = useMemo(() => {
+    const aboutComplete = Boolean(
+      watched.firstName?.trim() &&
+        watched.lastName?.trim() &&
+        watched.email?.includes('@') &&
+        (watched.subscriberTypeId ?? 0) > 0,
+    );
+    const contactComplete = Boolean(
+      (watched.communicationPreferenceIds?.length ?? 0) > 0 &&
+        (!phoneOrSmsSelected || watched.phoneNumber?.trim()) &&
+        (!postSelected || watched.postalAddress?.trim()),
+    );
+    const topicsComplete = (watched.interestIds?.length ?? 0) > 0;
+    const consentComplete = watched.consentGiven === true;
+    return [
+      { label: 'About you', complete: aboutComplete },
+      { label: 'Contact', complete: contactComplete },
+      { label: 'Topics', complete: topicsComplete },
+      { label: 'Consent', complete: consentComplete },
+    ];
+  }, [watched, phoneOrSmsSelected, postSelected]);
+
+  const firstIncomplete = steps.findIndex((s) => !s.complete);
+  const activeStepIndex = firstIncomplete === -1 ? steps.length - 1 : firstIncomplete;
 
   const mutation = useMutation({
     mutationFn: (values: SubscriptionFormValues) =>
@@ -128,7 +153,7 @@ export function SubscribePage() {
 
   return (
     <div className="space-y-10 max-w-4xl mx-auto">
-      <Hero />
+      <ProgressStepper steps={steps} activeIndex={activeStepIndex} />
 
       {ack && (
         <Alert tone="success" title="You're all set">
@@ -419,34 +444,71 @@ export function SubscribePage() {
   );
 }
 
-function Hero() {
+interface Step {
+  label: string;
+  complete: boolean;
+}
+
+interface ProgressStepperProps {
+  steps: Step[];
+  activeIndex: number;
+}
+
+function ProgressStepper({ steps, activeIndex }: ProgressStepperProps) {
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-brand-gradient text-white px-8 sm:px-12 py-12 sm:py-16 shadow-card-lg">
-      <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.4),_transparent_60%)]" />
-      <div className="relative max-w-2xl">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur px-3 py-1 text-xs font-medium ring-1 ring-white/20">
-          <SparklesIcon className="h-3.5 w-3.5" />
-          Newsletter Preferences
-        </span>
-        <h1 className="mt-5 text-3xl sm:text-4xl font-semibold leading-tight">
-          Choose what you hear about — and how.
+    <section className="animate-fade-in">
+      <div className="mb-5">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100">
+          Newsletter preferences
         </h1>
-        <p className="mt-4 text-white/90 max-w-xl text-sm sm:text-base leading-relaxed">
-          Tell us who you are, the topics you care about, and the channels you're happy to be
-          reached on. You stay in control: update or unsubscribe at any time.
+        <p className="mt-1 text-sm text-muted">
+          Tell us how you'd like to hear from us &mdash; you can update or unsubscribe any time.
         </p>
-        <div className="mt-6 flex flex-wrap items-center gap-2 text-xs text-white/80">
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5">
-            <HomeModernIcon className="h-3.5 w-3.5" /> Property updates
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5">
-            Planning &amp; development
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5">
-            Land sourcing
-          </span>
-        </div>
       </div>
+      <ol
+        aria-label="Form progress"
+        className="flex items-center gap-2 sm:gap-3 rounded-2xl border border-slate-200 dark:border-midnight-700 bg-white/60 dark:bg-midnight-900/40 backdrop-blur px-4 sm:px-5 py-3.5"
+      >
+        {steps.map((step, i) => {
+          const isComplete = step.complete;
+          const isActive = i === activeIndex && !isComplete;
+          const isLast = i === steps.length - 1;
+          return (
+            <li key={step.label} className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  aria-current={isActive ? 'step' : undefined}
+                  className={`flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition ${
+                    isComplete
+                      ? 'bg-brand-600 text-white shadow-sm'
+                      : isActive
+                        ? 'bg-white dark:bg-midnight-950 text-brand-700 dark:text-brand-300 ring-2 ring-brand-500'
+                        : 'bg-slate-100 dark:bg-midnight-800 text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  {isComplete ? <CheckIcon className="h-4 w-4" /> : i + 1}
+                </span>
+                <span
+                  className={`hidden sm:inline text-sm font-medium truncate ${
+                    isComplete || isActive
+                      ? 'text-slate-900 dark:text-slate-100'
+                      : 'text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  {step.label}
+                </span>
+              </div>
+              {!isLast && (
+                <div
+                  className={`h-px flex-1 min-w-[12px] transition-colors ${
+                    isComplete ? 'bg-brand-500/60' : 'bg-slate-200 dark:bg-midnight-700'
+                  }`}
+                />
+              )}
+            </li>
+          );
+        })}
+      </ol>
     </section>
   );
 }
