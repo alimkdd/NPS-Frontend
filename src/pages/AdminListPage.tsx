@@ -115,7 +115,7 @@ export function AdminListPage() {
           variant="secondary"
           leadingIcon={<ArrowRightOnRectangleIcon className="h-4 w-4" />}
           onClick={handleSignOut}
-          className="bg-slate-100 dark:bg-midnight-700 hover:bg-slate-200 dark:hover:bg-midnight-600 border-slate-300 dark:border-midnight-600"
+          className="!bg-slate-200 dark:!bg-midnight-600 hover:!bg-slate-300 dark:hover:!bg-midnight-500 !border-slate-400 dark:!border-midnight-500"
         >
           Sign out
         </Button>
