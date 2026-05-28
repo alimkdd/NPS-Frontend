@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import {
   FingerPrintIcon,
   LockClosedIcon,
@@ -7,6 +7,7 @@ import {
   SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { passkey } from '../lib/passkey';
+import { adminSession } from '../lib/session';
 import { Button } from '../components/ui/Button';
 import { Alert } from '../components/ui/Alert';
 import { Card } from '../components/ui/Card';
@@ -22,7 +23,13 @@ export function AdminLoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Captured once per render so the early-return below + the useEffect see
+  // the same value. The session can only flip false→true via the login flow
+  // (which navigates away on success), so capturing once is safe.
+  const alreadyAuthenticated = adminSession.isAuthenticated();
+
   useEffect(() => {
+    if (alreadyAuthenticated) return; // valid session — about to redirect, skip the status fetch
     if (!passkey.isSupported()) {
       setMode('unsupported');
       return;
@@ -44,7 +51,12 @@ export function AdminLoginPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [alreadyAuthenticated]);
+
+  // Hooks declared above; conditional render below is rules-of-hooks safe.
+  if (alreadyAuthenticated) {
+    return <Navigate to="/admin/subscriptions" replace />;
+  }
 
   async function handleSignIn() {
     setError(null);
