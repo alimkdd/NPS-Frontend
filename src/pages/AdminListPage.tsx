@@ -115,6 +115,7 @@ export function AdminListPage() {
           variant="secondary"
           leadingIcon={<ArrowRightOnRectangleIcon className="h-4 w-4" />}
           onClick={handleSignOut}
+          className="bg-slate-100 dark:bg-midnight-700 hover:bg-slate-200 dark:hover:bg-midnight-600 border-slate-300 dark:border-midnight-600"
         >
           Sign out
         </Button>
@@ -189,7 +190,7 @@ export function AdminListPage() {
             value={filter.interestId}
             onChange={(v) => applyFilter({ interestId: v })}
           />
-          <Button type="submit">Apply</Button>
+          <Button type="submit">Search</Button>
           {hasFilters && (
             <Button
               type="button"

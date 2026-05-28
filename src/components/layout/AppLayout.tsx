@@ -5,7 +5,7 @@ import {
   Cog6ToothIcon,
   HandRaisedIcon,
 } from '@heroicons/react/24/outline';
-import { SparklesIcon } from '@heroicons/react/24/solid';
+import { NewspaperIcon } from '@heroicons/react/24/solid';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
 export function AppLayout() {
@@ -18,7 +18,7 @@ export function AppLayout() {
         <div className="max-w-7xl mx-auto px-5 sm:px-8 h-20 flex items-center gap-5">
           <NavLink to="/" className="flex items-center gap-3 group">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-gradient text-white shadow-md ring-1 ring-white/20 group-hover:scale-105 transition-transform">
-              <SparklesIcon className="h-5 w-5" />
+              <NewspaperIcon className="h-5 w-5" />
             </span>
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -31,15 +31,15 @@ export function AppLayout() {
           </NavLink>
 
           <nav aria-label="Primary" className="hidden sm:flex items-center gap-1 ml-8">
-            <NavItem to="/" icon={<EnvelopeOpenIcon className="h-4 w-4" />}>
+            <NavItem to="/" icon={<EnvelopeOpenIcon className="h-5 w-5" />}>
               Subscribe
             </NavItem>
-            <NavItem to="/unsubscribe" icon={<HandRaisedIcon className="h-4 w-4" />}>
+            <NavItem to="/unsubscribe" icon={<HandRaisedIcon className="h-5 w-5" />}>
               Unsubscribe
             </NavItem>
             <NavItem
               to={isAdmin ? '/admin/subscriptions' : '/admin'}
-              icon={<Cog6ToothIcon className="h-4 w-4" />}
+              icon={<Cog6ToothIcon className="h-5 w-5" />}
               matchPrefix="/admin"
             >
               Admin
@@ -55,15 +55,15 @@ export function AppLayout() {
           aria-label="Primary mobile"
           className="sm:hidden border-t border-slate-200 dark:border-midnight-700 px-3 py-2 flex gap-1 overflow-x-auto"
         >
-          <NavItem to="/" icon={<EnvelopeOpenIcon className="h-4 w-4" />}>
+          <NavItem to="/" icon={<EnvelopeOpenIcon className="h-5 w-5" />}>
             Subscribe
           </NavItem>
-          <NavItem to="/unsubscribe" icon={<HandRaisedIcon className="h-4 w-4" />}>
+          <NavItem to="/unsubscribe" icon={<HandRaisedIcon className="h-5 w-5" />}>
             Unsubscribe
           </NavItem>
           <NavItem
             to={isAdmin ? '/admin/subscriptions' : '/admin'}
-            icon={<Cog6ToothIcon className="h-4 w-4" />}
+            icon={<Cog6ToothIcon className="h-5 w-5" />}
             matchPrefix="/admin"
           >
             Admin
@@ -103,7 +103,7 @@ function NavItem({ to, icon, children, matchPrefix }: NavItemProps) {
       to={to}
       end={!matchPrefix}
       className={({ isActive }) =>
-        `inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+        `inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-base font-medium transition ${
           isActive
             ? 'bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300'
             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-midnight-800'

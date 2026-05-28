@@ -13,6 +13,14 @@
 
   html {
     @apply antialiased font-sans;
+    /* Smooth scroll for anchor jumps + scrollIntoView; respects prefers-reduced-motion. */
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
 
   body {

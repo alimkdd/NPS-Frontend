@@ -189,7 +189,7 @@ export function SubscribePage() {
         className="space-y-8 animate-fade-in"
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
       >
-        <Card id="step-about" className="p-7 sm:p-8 scroll-mt-24">
+        <Card id="step-about" className="p-7 sm:p-8 scroll-mt-28">
           <SectionHeading
             icon={<UserIcon className="h-5 w-5" />}
             title="About you"
@@ -280,7 +280,7 @@ export function SubscribePage() {
           <FieldError id="subscriberTypeId-error" message={errors.subscriberTypeId?.message} />
         </Card>
 
-        <Card id="step-contact" className="p-7 sm:p-8 scroll-mt-24">
+        <Card id="step-contact" className="p-7 sm:p-8 scroll-mt-28">
           <SectionHeading
             icon={<ChatBubbleLeftRightIcon className="h-5 w-5" />}
             title="How can we contact you?"
@@ -369,7 +369,7 @@ export function SubscribePage() {
           )}
         </Card>
 
-        <Card id="step-topics" className="p-7 sm:p-8 scroll-mt-24">
+        <Card id="step-topics" className="p-7 sm:p-8 scroll-mt-28">
           <SectionHeading
             icon={<TagIcon className="h-5 w-5" />}
             title="What would you like to hear about?"
@@ -417,7 +417,7 @@ export function SubscribePage() {
           <FieldError id="interestIds-error" message={errors.interestIds?.message as string | undefined} />
         </Card>
 
-        <Card id="step-consent" className="p-7 sm:p-8 scroll-mt-24">
+        <Card id="step-consent" className="p-7 sm:p-8 scroll-mt-28">
           <SectionHeading
             icon={<ShieldCheckIcon className="h-5 w-5" />}
             title="Consent"
