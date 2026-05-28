@@ -90,7 +90,9 @@ export function AdminListPage() {
   }
 
   const result = listQuery.data;
-  const totalPages = result ? Math.max(1, Math.ceil(result.totalCount / (filter.pageSize ?? 10))) : 1;
+  const totalPages = result && result.pageSize > 0
+    ? Math.max(1, Math.ceil(result.totalCount / result.pageSize))
+    : 1;
   const hasFilters =
     !!filter.searchTerm ||
     !!filter.subscriberTypeId ||
@@ -316,6 +318,10 @@ export function AdminListPage() {
           <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-muted text-sm">
             <span className="text-subtle">
               Page {result.page} of {totalPages} —{' '}
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                {result.items.length}
+              </span>{' '}
+              of{' '}
               <span className="font-medium text-slate-700 dark:text-slate-300">
                 {result.totalCount}
               </span>{' '}
