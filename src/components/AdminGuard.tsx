@@ -1,9 +1,8 @@
 import { Navigate } from 'react-router-dom';
-import { adminAuth } from '../lib/auth';
+import { adminSession } from '../lib/session';
 
 export function AdminGuard({ children }: { children: React.ReactNode }) {
-  const hasKey = !!adminAuth.get();
-  if (!hasKey) {
+  if (!adminSession.isAuthenticated()) {
     return <Navigate to="/admin" replace />;
   }
   return <>{children}</>;

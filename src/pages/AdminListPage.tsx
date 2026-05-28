@@ -15,7 +15,7 @@ import {
   UsersIcon,
 } from '@heroicons/react/24/outline';
 import { api } from '../lib/api';
-import { adminAuth } from '../lib/auth';
+import { adminSession } from '../lib/session';
 import { ApiError, type SubscriptionFilter, type SubscriptionResponse } from '../lib/types';
 import { Button } from '../components/ui/Button';
 import { Alert } from '../components/ui/Alert';
@@ -78,13 +78,13 @@ export function AdminListPage() {
   }
 
   function handleSignOut() {
-    adminAuth.clear();
+    adminSession.clear();
     toast.success('Signed out');
     navigate('/admin', { replace: true });
   }
 
   if (listQuery.isError && listQuery.error instanceof ApiError && listQuery.error.isUnauthorized) {
-    adminAuth.clear();
+    adminSession.clear();
     navigate('/admin', { replace: true });
     return null;
   }

@@ -1,4 +1,4 @@
-import { adminAuth } from './auth';
+import { adminSession } from './session';
 import {
   ApiError,
   type LookupsResponse,
@@ -11,7 +11,7 @@ import {
   type UpsertSubscriptionRequest,
 } from './types';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5289';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://localhost:7287';
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'DELETE';
@@ -32,11 +32,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   if (admin) {
-    const key = adminAuth.get();
-    if (!key) {
-      throw new ApiError(401, 'Admin key missing. Please sign in.');
+    const token = adminSession.getToken();
+    if (!token) {
+      throw new ApiError(401, 'Your session has expired. Please sign in again.');
     }
-    headers['X-Admin-Key'] = key;
+    headers['Authorization'] = `Bearer ${token}`;
   }
 
   let response: Response;
@@ -50,6 +50,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err;
     throw new ApiError(0, 'Cannot reach the server. Is the API running?');
+  }
+
+  // Token expired or revoked mid-session — clear it so the UI bounces back to login.
+  if (admin && response.status === 401) {
+    adminSession.clear();
   }
 
   const correlationId = response.headers.get('X-Correlation-Id') ?? undefined;
