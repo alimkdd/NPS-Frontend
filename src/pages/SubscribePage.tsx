@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -12,7 +12,6 @@ import {
   CheckBadgeIcon,
   EnvelopeIcon,
   BuildingOfficeIcon,
-  PhoneIcon,
 } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import { api } from '../lib/api';
@@ -23,6 +22,7 @@ import { Alert } from '../components/ui/Alert';
 import { Spinner } from '../components/ui/Spinner';
 import { Card, SectionHeading } from '../components/ui/Card';
 import { FieldError } from '../components/forms/FieldError';
+import { PhoneNumberField } from '../components/forms/PhoneNumberField';
 
 export function SubscribePage() {
   const [serverErrors, setServerErrors] = useState<string[]>([]);
@@ -97,17 +97,20 @@ export function SubscribePage() {
   const activeStepIndex = firstIncomplete === -1 ? steps.length - 1 : firstIncomplete;
   const completedCount = steps.filter((s) => s.complete).length;
 
-  const submitButtonRef = useRef<HTMLButtonElement | null>(null);
   const [submitVisible, setSubmitVisible] = useState(true);
-  useEffect(() => {
-    const node = submitButtonRef.current;
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  // Callback ref so the observer attaches whenever the button actually mounts.
+  // (The button only renders after the lookups query resolves, which is *after*
+  // the initial render — an effect with [] deps would miss it on first visit.)
+  const submitButtonRef = useCallback((node: HTMLButtonElement | null) => {
+    observerRef.current?.disconnect();
     if (!node || typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver(
       ([entry]) => setSubmitVisible(entry.isIntersecting),
       { rootMargin: '0px 0px -40px 0px', threshold: 0 },
     );
     observer.observe(node);
-    return () => observer.disconnect();
+    observerRef.current = observer;
   }, []);
 
   function scrollToAnchor(id: string) {
@@ -332,15 +335,20 @@ export function SubscribePage() {
 
           {phoneOrSmsSelected && (
             <div className="mt-6 animate-fade-in">
-              <TextInput
-                label="Phone number"
-                type="tel"
-                autoComplete="tel"
-                required
-                leadingIcon={<PhoneIcon className="h-4 w-4 text-slate-400" />}
-                error={errors.phoneNumber?.message}
-                description="Required because you selected Phone or SMS."
-                {...register('phoneNumber')}
+              <Controller
+                name="phoneNumber"
+                control={control}
+                render={({ field }) => (
+                  <PhoneNumberField
+                    label="Phone number"
+                    required
+                    description="Required because you selected Phone or SMS."
+                    value={field.value || undefined}
+                    onChange={(v) => field.onChange(v ?? '')}
+                    onBlur={field.onBlur}
+                    error={errors.phoneNumber?.message}
+                  />
+                )}
               />
             </div>
           )}

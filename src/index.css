@@ -109,3 +109,24 @@
            text-slate-700 dark:text-slate-300;
   }
 }
+
+/* react-phone-number-input: strip its default chrome so the flag selector blends
+   into our .phone-field wrapper (which provides the border + focus ring). */
+.phone-field .PhoneInput {
+  @apply flex w-full items-center;
+  --PhoneInputCountryFlag-height: 1rem;
+  --PhoneInputCountrySelectArrow-color: theme('colors.slate.400');
+}
+
+.phone-field .PhoneInputCountry {
+  @apply mr-2 pr-2 border-r border-slate-200 dark:border-midnight-700;
+}
+
+.phone-field .PhoneInputCountryIcon {
+  @apply shadow-none;
+}
+
+/* The flag selector gets its own focus ring (the wrapper handles the input). */
+.phone-field .PhoneInputCountrySelect:focus-visible + .PhoneInputCountryIcon {
+  @apply ring-2 ring-brand-500 rounded-sm;
+}

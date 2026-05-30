@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 import type { LookupItem } from '../lib/types';
 
 // Tighter than FluentValidation's lenient EmailAddress() — mirrors the backend's
@@ -67,11 +68,18 @@ export const buildSubscriptionSchema = (preferences: LookupItem[]) => {
         (smsCode !== undefined && ids.has(smsCode));
       const needsPostal = postCode !== undefined && ids.has(postCode);
 
-      if (needsPhone && !data.phoneNumber?.trim()) {
+      const phone = data.phoneNumber?.trim();
+      if (needsPhone && !phone) {
         ctx.addIssue({
           code: 'custom',
           path: ['phoneNumber'],
           message: 'Phone number is required when Phone or SMS is selected.',
+        });
+      } else if (phone && !isValidPhoneNumber(phone)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['phoneNumber'],
+          message: 'Enter a valid phone number for the selected country.',
         });
       }
 
