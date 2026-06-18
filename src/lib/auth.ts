@@ -30,9 +30,16 @@ export function adminDisplayName(): string | null {
 }
 
 /**
- * Clears the local passkey session. Keycloak sign-out is a full-page redirect handled by the
- * auth context; this is safe to call regardless of method (a no-op when Keycloak is active).
+ * Clears local admin auth for BOTH methods after the API rejects a token (401): drops the
+ * passkey session and the in-memory Keycloak token (`clearToken()` flips `authenticated` to
+ * false without a redirect). This is what prevents a rejected token from spinning into a
+ * /admin ↔ /admin/subscriptions redirect loop — once cleared, `isAdminAuthenticated()` is
+ * false, so the login page stops bouncing to the dashboard. The Keycloak SSO cookie survives,
+ * so "Sign in with Keycloak" can re-authenticate silently.
  */
-export function clearPasskeySession(): void {
+export function clearAdminAuth(): void {
   adminSession.clear();
+  if (keycloak.authenticated) {
+    keycloak.clearToken();
+  }
 }

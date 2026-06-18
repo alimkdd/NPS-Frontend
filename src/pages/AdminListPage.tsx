@@ -15,7 +15,7 @@ import {
   UsersIcon,
 } from '@heroicons/react/24/outline';
 import { api } from '../lib/api';
-import { clearPasskeySession } from '../lib/auth';
+import { clearAdminAuth } from '../lib/auth';
 import { useAuth } from '../lib/authContext';
 import { ApiError, type SubscriptionFilter, type SubscriptionResponse } from '../lib/types';
 import { Button } from '../components/ui/Button';
@@ -87,7 +87,7 @@ export function AdminListPage() {
   }
 
   if (listQuery.isError && listQuery.error instanceof ApiError && listQuery.error.isUnauthorized) {
-    clearPasskeySession();
+    clearAdminAuth();
     navigate('/admin', { replace: true });
     return null;
   }

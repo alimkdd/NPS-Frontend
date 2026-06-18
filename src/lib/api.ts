@@ -1,4 +1,4 @@
-import { clearPasskeySession, getAdminToken } from './auth';
+import { clearAdminAuth, getAdminToken } from './auth';
 import {
   ApiError,
   type LookupsResponse,
@@ -52,10 +52,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     throw new ApiError(0, 'Cannot reach the server. Is the API running?');
   }
 
-  // Token expired or revoked mid-session — clear the passkey session so the UI bounces back
-  // to login (no-op when signed in via Keycloak, whose own refresh handles expiry).
+  // Token expired, revoked, or rejected — clear both auth methods so the UI bounces back to
+  // login instead of looping (the login page only auto-redirects while authenticated).
   if (admin && response.status === 401) {
-    clearPasskeySession();
+    clearAdminAuth();
   }
 
   const correlationId = response.headers.get('X-Correlation-Id') ?? undefined;
