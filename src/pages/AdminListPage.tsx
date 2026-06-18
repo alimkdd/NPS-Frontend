@@ -15,7 +15,8 @@ import {
   UsersIcon,
 } from '@heroicons/react/24/outline';
 import { api } from '../lib/api';
-import { adminSession } from '../lib/session';
+import { clearPasskeySession } from '../lib/auth';
+import { useAuth } from '../lib/authContext';
 import { ApiError, type SubscriptionFilter, type SubscriptionResponse } from '../lib/types';
 import { Button } from '../components/ui/Button';
 import { Alert } from '../components/ui/Alert';
@@ -28,6 +29,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 export function AdminListPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { logout } = useAuth();
 
   const [filter, setFilter] = useState<SubscriptionFilter>({ page: 1, pageSize: 10 });
   const [searchInput, setSearchInput] = useState('');
@@ -78,13 +80,14 @@ export function AdminListPage() {
   }
 
   function handleSignOut() {
-    adminSession.clear();
     toast.success('Signed out');
+    // Keycloak: full-page redirect to /admin. Passkey: clears the local session; navigate below.
+    logout();
     navigate('/admin', { replace: true });
   }
 
   if (listQuery.isError && listQuery.error instanceof ApiError && listQuery.error.isUnauthorized) {
-    adminSession.clear();
+    clearPasskeySession();
     navigate('/admin', { replace: true });
     return null;
   }

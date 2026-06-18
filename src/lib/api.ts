@@ -1,4 +1,4 @@
-import { adminSession } from './session';
+import { clearPasskeySession, getAdminToken } from './auth';
 import {
   ApiError,
   type LookupsResponse,
@@ -32,7 +32,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   if (admin) {
-    const token = adminSession.getToken();
+    const token = await getAdminToken();
     if (!token) {
       throw new ApiError(401, 'Your session has expired. Please sign in again.');
     }
@@ -52,9 +52,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     throw new ApiError(0, 'Cannot reach the server. Is the API running?');
   }
 
-  // Token expired or revoked mid-session — clear it so the UI bounces back to login.
+  // Token expired or revoked mid-session — clear the passkey session so the UI bounces back
+  // to login (no-op when signed in via Keycloak, whose own refresh handles expiry).
   if (admin && response.status === 401) {
-    adminSession.clear();
+    clearPasskeySession();
   }
 
   const correlationId = response.headers.get('X-Correlation-Id') ?? undefined;

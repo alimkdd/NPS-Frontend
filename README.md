@@ -15,7 +15,7 @@ React + TypeScript frontend for the Newsletter Preferences recruitment exercise.
 | Server state          | TanStack Query v5                                                           |
 | Forms                 | React Hook Form + Zod resolver (Zod v4)                                     |
 | Toasts                | `sonner` (theme-aware, top-right)                                           |
-| **Admin auth**        | **WebAuthn / passkey** via `@simplewebauthn/browser`, JWT in sessionStorage |
+| **Admin auth**        | **Keycloak (OIDC)** via `keycloak-js` (Auth Code + PKCE), with legacy **WebAuthn / passkey** (`@simplewebauthn/browser`) as a fallback |
 
 ## Prerequisites
 
@@ -63,11 +63,14 @@ Vite serves at `https://localhost:5173`. The backend's CORS allow-list already i
 
 ## Configuration
 
-Single env var, exposed to the bundle as `import.meta.env.VITE_API_BASE_URL`:
+Env vars exposed to the bundle via `import.meta.env.*`:
 
-| Key                 | Default                   | Purpose                                                                                                                                  |
-| ------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_API_BASE_URL` | `https://localhost:7287`  | Backend origin. Matches the BE's https launch profile. If you run the BE on http only, override to `http://localhost:5289`.              |
+| Key                       | Default                   | Purpose                                                                                                                                  |
+| ------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_API_BASE_URL`       | `https://localhost:7287`  | Backend origin. Matches the BE's https launch profile. If you run the BE on http only, override to `http://localhost:5289`.              |
+| `VITE_KEYCLOAK_URL`       | `http://localhost:8080`   | Keycloak base URL. The BE's docker-compose runs Keycloak here.                                                                            |
+| `VITE_KEYCLOAK_REALM`     | `nps`                     | Realm imported by the backend (`keycloak/realm-export.json`).                                                                            |
+| `VITE_KEYCLOAK_CLIENT_ID` | `nps-admin-spa`           | Public SPA client (Authorization Code + PKCE).                                                                                            |
 
 `.env.local` is gitignored. `.env.example` is committed as the template.
 
@@ -77,10 +80,10 @@ Single env var, exposed to the bundle as `import.meta.env.VITE_API_BASE_URL`:
 | ------------------------ | --------------------------------------------------------------------------------------------- |
 | `/`                      | Public subscription form with live progress stepper.                                          |
 | `/unsubscribe`           | Public unsubscribe form (email only; always returns the same response — no enumeration leak). |
-| `/admin`                 | Admin sign-in **with biometrics** — first-time enrollment or sign-in depending on state.      |
+| `/admin`                 | Admin sign-in — **Sign in with Keycloak** (primary) plus a device-passkey fallback.           |
 | `/admin/subscriptions`   | Admin dashboard — stats cards, paged list, search, filter, soft-delete with confirm dialog.   |
 
-The admin guard in [src/components/AdminGuard.tsx](src/components/AdminGuard.tsx) redirects to `/admin` if no valid JWT is in `sessionStorage`.
+The admin guard in [src/components/AdminGuard.tsx](src/components/AdminGuard.tsx) waits for Keycloak's silent SSO check, then redirects to `/admin` unless authenticated via Keycloak **or** a valid passkey session.
 
 ## Project layout
 
@@ -91,8 +94,11 @@ src/
   index.css                     Tailwind directives, base styles, smooth scroll
   lib/
     api.ts                      typed fetch wrapper, attaches Authorization: Bearer
+    keycloak.ts                 keycloak-js instance, one-time init, token + login/logout helpers
+    auth.ts                     unified token/identity accessor over Keycloak + passkey (no React)
+    authContext.tsx             AuthProvider + useAuth — silent SSO on mount, exposes auth state
     passkey.ts                  WebAuthn ceremonies (status / register / login) on @simplewebauthn/browser
-    session.ts                  sessionStorage for the JWT + expiry checks
+    session.ts                  sessionStorage for the passkey JWT + expiry checks
     queryClient.ts              TanStack Query defaults
     theme.tsx                   light/dark provider, sessionStorage + prefers-color-scheme
     types.ts                    DTOs matching the backend, ApiError class
@@ -107,17 +113,20 @@ src/
   pages/
     SubscribePage.tsx           public form: progress stepper, conditional fields, sticky footer
     UnsubscribePage.tsx         public unsubscribe
-    AdminLoginPage.tsx          biometric sign-in / first-time enrollment branch
+    AdminLoginPage.tsx          Keycloak sign-in (primary) + device-passkey fallback
     AdminListPage.tsx           paged table, stats row, ConfirmDialog before destructive actions
     NotFoundPage.tsx            404
 ```
 
-## Admin sign-in flow (WebAuthn)
+## Admin sign-in flow
 
-1. On mount, `AdminLoginPage` calls `GET /api/admin/auth/status`. The response says whether the admin has any registered passkey.
-2. **First-time enrollment** (no credentials yet): clicking the button calls `POST /register/begin`, then `navigator.credentials.create()` (via `@simplewebauthn/browser`) which triggers Windows Hello / Touch ID / a security key. The resulting attestation is sent to `POST /register/complete`. Immediately after, the FE calls the login flow so the admin is signed in without an extra click.
-3. **Subsequent sign-ins**: `POST /login/begin` → `navigator.credentials.get()` → `POST /login/complete` returns a JWT, which `session.ts` stores in `sessionStorage` (with a 30s safety margin before its UTC expiry).
-4. The JWT is attached to every admin API call as `Authorization: Bearer <jwt>` by `api.ts`. A 401 from any admin endpoint clears the session and bounces the user back to `/admin`.
+Auth is **unified across two methods** behind one context ([src/lib/authContext.tsx](src/lib/authContext.tsx)) and one token accessor ([src/lib/auth.ts](src/lib/auth.ts)). `api.ts` calls `getAdminToken()`, which prefers Keycloak and falls back to the passkey session.
+
+**Keycloak (primary).** On load, `AuthProvider` runs `keycloak-js` `init({ onLoad: 'check-sso', pkceMethod: 'S256' })` — a hidden-iframe silent SSO check ([public/silent-check-sso.html](public/silent-check-sso.html)) that restores an existing Keycloak session without a visible redirect. **Sign in with Keycloak** redirects to the Keycloak login page (password or passkey, configured in the realm); on return, keycloak-js exchanges the code (PKCE) for an RS256 access token kept in memory and auto-refreshed before expiry. The backend validates it via the realm JWKS.
+
+**Passkey (legacy fallback).** The original WebAuthn ceremony still works: `GET /api/admin/auth/status` → `POST /login/begin` → `navigator.credentials.get()` → `POST /login/complete` returns a self-issued JWT stored in `sessionStorage`. The backend's multi-scheme auth accepts it on the same admin endpoints.
+
+In both cases the token is attached as `Authorization: Bearer <jwt>` by `api.ts`. A 401 clears the passkey session (a no-op under Keycloak, whose own refresh handles expiry) and the UI bounces back to `/admin`.
 
 The biometric/secret material never leaves the device — the browser proves identity to the server via a signed challenge; the server only stores the public half of the credential.
 
@@ -160,13 +169,13 @@ Client-side validation is intentionally a strict superset of what the server enf
 
 ## For the reviewer — how to demo
 
-The admin sign-in uses biometrics, so the demo on your machine looks like this:
+Admin sign-in is delegated to Keycloak, so the demo on your machine looks like this:
 
-1. After running both backend (`https` profile) and frontend, visit `https://localhost:5173/admin`.
-2. Because no passkey is registered yet, you'll see **"Set up biometric sign-in"**. Click **Enroll this device** — your browser will prompt for Windows Hello / Touch ID / a security key. Approve it and you're auto-signed-in.
-3. Subsequent visits show **"Sign in with biometrics"** instead. One click + biometric prompt and you're in.
+1. Start the backend stack (`docker compose up -d` brings up SQL Server **and** Keycloak), run the BE on the `https` profile, then the frontend. Visit `https://localhost:5173/admin`.
+2. Click **Sign in with Keycloak**. You're redirected to the Keycloak login page — sign in as the seeded realm user (`admin` / `AdminDev_2024!`, see the backend's `keycloak/README.md`). You're returned to the dashboard, authenticated.
+3. **Sign out** returns you to Keycloak's session end and back to `/admin`.
 
-If you don't have a platform authenticator on your laptop, a USB security key works too (YubiKey, Solokey, etc.). If neither is available, you can still walk through everything else and we can discuss the WebAuthn architecture during the interview — the integration tests on the backend issue real JWTs end-to-end so the auth wiring is exercised regardless.
+A **device passkey** fallback is still on the login page (the original WebAuthn flow): enroll/sign-in with Windows Hello / Touch ID / a security key, which the backend accepts on the same endpoints via its multi-scheme auth. If you don't have a platform authenticator, Keycloak's password login is the simplest path.
 
 ## AI usage
 

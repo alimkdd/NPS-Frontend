@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Keycloak silent SSO check</title>
+  </head>
+  <body>
+    <!--
+      Loaded in a hidden iframe by keycloak-js (onLoad: 'check-sso') to silently restore an
+      existing Keycloak session without a visible redirect. It just relays the callback URL
+      back to the parent window. Registered as a redirect URI for the nps-admin-spa client.
+    -->
+    <script>
+      parent.postMessage(location.href, location.origin);
+    </script>
+  </body>
+</html>
